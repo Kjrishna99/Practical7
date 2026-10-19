@@ -1,0 +1,296 @@
+# Selenium with Python: 5 Practicals
+
+Every script is standalone, so you can save each one as its own `.py` file. They use Selenium 4, which downloads the right driver for you, so there is no manual chromedriver setup.
+
+---
+
+## Practical 1: Install Selenium and configure the environment
+
+**Steps**
+
+1. Install Python 3.9+ from python.org. Tick **"Add Python to PATH"** during install. Check it with `python --version`.
+2. Install Google Chrome (Firefox or Edge also work).
+3. Install VS Code and add the **Python** extension.
+4. Create a folder `selenium_practicals` and open it in VS Code (File → Open Folder).
+5. Open the VS Code terminal (Ctrl + `) and create a virtual environment:
+   ```bash
+   python -m venv venv
+   venv\Scripts\activate        # Windows
+   source venv/bin/activate     # Mac/Linux
+   ```
+6. Install Selenium:
+   ```bash
+   pip install selenium
+   ```
+7. Verify it with `pip show selenium`. Then create `p1_open_google.py` and run `python p1_open_google.py`.
+
+**`p1_open_google.py`**
+```python
+from selenium import webdriver
+import time
+
+driver = webdriver.Chrome()          # Selenium Manager auto-downloads ChromeDriver
+driver.maximize_window()
+
+driver.get("https://www.google.com")
+print("Page Title:", driver.title)   # Output: Google
+print("Current URL:", driver.current_url)
+
+time.sleep(5)                        # keep the browser open for 5 seconds
+driver.quit()
+```
+
+---
+
+## Practical 2: Automate a Google search
+
+**Steps:** Create `p2_google_search.py` and run it. The script finds the search box (`name="q"`), types a query and presses Enter.
+
+**`p2_google_search.py`**
+```python
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
+
+driver = webdriver.Chrome()
+driver.maximize_window()
+
+try:
+    driver.get("https://www.google.com")
+
+    wait = WebDriverWait(driver, 10)
+    search_box = wait.until(EC.presence_of_element_located((By.NAME, "q")))
+
+    search_box.send_keys("Selenium WebDriver Python")
+    search_box.send_keys(Keys.RETURN)
+
+    wait.until(EC.title_contains("Selenium"))
+    print("Search done. Title:", driver.title)
+
+    results = driver.find_elements(By.CSS_SELECTOR, "h3")
+    for i, r in enumerate(results[:5], start=1):
+        print(i, r.text)
+
+    time.sleep(5)
+finally:
+    driver.quit()
+```
+
+> Google sometimes shows a CAPTCHA or consent page to automated browsers. If that happens, change the URL to `https://www.bing.com` and the locator to `By.NAME, "q"`. Bing uses the same name.
+
+---
+
+## Practical 3: Automate form handling (VS Code)
+
+**Steps**
+
+1. In VS Code, create `p3_form_handling.py`.
+2. Select your venv interpreter (Ctrl+Shift+P → "Python: Select Interpreter").
+3. Click the ▶ Run button, or run `python p3_form_handling.py` in the terminal.
+
+**`p3_form_handling.py`**
+```python
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import Select
+import time
+
+driver = webdriver.Chrome()
+driver.maximize_window()
+
+try:
+    driver.get("https://www.selenium.dev/selenium/web/web-form.html")
+
+    # Text input, password, textarea
+    driver.find_element(By.NAME, "my-text").send_keys("Ayushi Chopra")
+    driver.find_element(By.NAME, "my-password").send_keys("Secret@123")
+    driver.find_element(By.NAME, "my-textarea").send_keys("Filled using Selenium.")
+
+    # Dropdown
+    Select(driver.find_element(By.NAME, "my-select")).select_by_visible_text("Two")
+
+    # Checkbox and radio button
+    checkbox = driver.find_element(By.ID, "my-check-2")
+    if not checkbox.is_selected():
+        checkbox.click()
+    driver.find_element(By.ID, "my-radio-2").click()
+
+    time.sleep(2)
+
+    # Submit
+    driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
+
+    time.sleep(1)
+    message = driver.find_element(By.ID, "message").text
+    print("Result message:", message)    # Received!
+
+    time.sleep(3)
+finally:
+    driver.quit()
+```
+
+---
+
+## Practical 4: Different locators (ID, Name, XPath, CSS Selector)
+
+**Steps:** Create `p4_locators.py` and run it. It logs in to a practice site, using a different locator for each element.
+
+**`p4_locators.py`**
+```python
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+import time
+
+driver = webdriver.Chrome()
+driver.maximize_window()
+
+try:
+    driver.get("https://the-internet.herokuapp.com/login")
+
+    # 1. ID locator
+    driver.find_element(By.ID, "username").send_keys("tomsmith")
+
+    # 2. NAME locator
+    driver.find_element(By.NAME, "password").send_keys("SuperSecretPassword!")
+
+    # 3. CSS Selector locator
+    driver.find_element(By.CSS_SELECTOR, "button.radius").click()
+
+    time.sleep(1)
+
+    # 4. XPath locator
+    msg = driver.find_element(By.XPATH, "//div[@id='flash']").text
+    print("Message:", msg.strip())
+
+    # Bonus locators
+    heading = driver.find_element(By.TAG_NAME, "h2").text
+    print("Heading (TAG_NAME):", heading)
+
+    logout = driver.find_element(By.LINK_TEXT, "Logout")
+    print("Logout link found (LINK_TEXT):", logout.is_displayed())
+    logout.click()
+
+    time.sleep(2)
+finally:
+    driver.quit()
+```
+
+| Locator | Syntax used |
+|---|---|
+| ID | `By.ID, "username"` |
+| Name | `By.NAME, "password"` |
+| CSS Selector | `By.CSS_SELECTOR, "button.radius"` |
+| XPath | `By.XPATH, "//div[@id='flash']"` |
+
+---
+
+## Practical 5: Handle alerts, frames and multiple windows
+
+**Steps:** Create `p5_alert_frame_window.py` and run it. It has three parts, one each for alerts, frames and windows.
+
+**`p5_alert_frame_window.py`**
+```python
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
+
+driver = webdriver.Chrome()
+driver.maximize_window()
+wait = WebDriverWait(driver, 10)
+
+try:
+    # ---------- PART 1: ALERTS ----------
+    driver.get("https://the-internet.herokuapp.com/javascript_alerts")
+
+    # Simple alert
+    driver.find_element(By.XPATH, "//button[text()='Click for JS Alert']").click()
+    alert = wait.until(EC.alert_is_present())
+    print("Alert text:", alert.text)
+    alert.accept()
+    print(driver.find_element(By.ID, "result").text)
+
+    # Confirm alert (dismiss)
+    driver.find_element(By.XPATH, "//button[text()='Click for JS Confirm']").click()
+    alert = wait.until(EC.alert_is_present())
+    print("Confirm text:", alert.text)
+    alert.dismiss()
+    print(driver.find_element(By.ID, "result").text)
+
+    # Prompt alert (type text)
+    driver.find_element(By.XPATH, "//button[text()='Click for JS Prompt']").click()
+    alert = wait.until(EC.alert_is_present())
+    alert.send_keys("Hello Selenium")
+    alert.accept()
+    print(driver.find_element(By.ID, "result").text)
+
+    # ---------- PART 2: FRAMES ----------
+    driver.get("https://the-internet.herokuapp.com/iframe")
+
+    wait.until(EC.frame_to_be_available_and_switch_to_it((By.ID, "mce_0_ifr")))
+    editor = driver.find_element(By.ID, "tinymce")
+    editor.clear()
+    editor.send_keys("Typing inside an iframe!")
+    print("Text in frame:", editor.text)
+
+    driver.switch_to.default_content()          # back to main page
+    print("Main page heading:", driver.find_element(By.TAG_NAME, "h3").text)
+
+    # ---------- PART 3: MULTIPLE WINDOWS ----------
+    driver.get("https://the-internet.herokuapp.com/windows")
+    parent_window = driver.current_window_handle
+
+    driver.find_element(By.LINK_TEXT, "Click Here").click()
+    wait.until(EC.number_of_windows_to_be(2))
+
+    for handle in driver.window_handles:
+        if handle != parent_window:
+            driver.switch_to.window(handle)
+            break
+
+    print("Child window title:", driver.title)
+    print("Child window text:", driver.find_element(By.TAG_NAME, "h3").text)
+
+    driver.close()                              # close child window
+    driver.switch_to.window(parent_window)      # return to parent
+    print("Back on parent window:", driver.title)
+
+    time.sleep(3)
+finally:
+    driver.quit()
+```
+
+---
+
+## Quick reference
+
+| Task | Command |
+|---|---|
+| Install Selenium | `pip install selenium` |
+| Run a script | `python filename.py` |
+| Alert handling | `switch_to.alert` → `accept()` / `dismiss()` / `send_keys()` |
+| Frame handling | `switch_to.frame()` → `switch_to.default_content()` |
+| Window handling | `window_handles` → `switch_to.window(handle)` |
+
+**Common errors**
+- `ModuleNotFoundError: selenium`: your venv isn't activated or the interpreter is wrong. Re-select it in VS Code.
+- Driver or version errors: update Chrome and run `pip install --upgrade selenium`.
+- `NoSuchElementException`: the element hasn't loaded yet. Use `WebDriverWait`, as shown above.
+
+
+
+Choose **venv (3.14.7) `.\venv\Scripts\python.exe`**, the one marked **Workspace** at the bottom of the list.
+
+That's the virtual environment you created inside your project folder, and it's where you ran `pip install selenium`. The top bar already says "Selected Interpreter: .\venv\Scripts\python.exe", so it's likely selected already. Just click that entry once to confirm.
+
+The other options won't work for this:
+- **Python 3.14.7 (Global)** doesn't have Selenium installed, so you'd get `ModuleNotFoundError`.
+- **base, cvenv, autods (Conda)** are your other environments, and none of them has Selenium unless you installed it there.
+
+To check that it worked, look at the bottom-right corner of VS Code. It should show `3.14.7 ('venv': venv)`. Then open a new terminal (Ctrl+`) and you should see `(venv)` at the start of the prompt. If it's missing, run `venv\Scripts\activate` first.
+
+You can also run `pip show selenium` in that terminal. If it prints version details, you're ready to run `p3_form_handling.py`.
